@@ -1,0 +1,5 @@
+#left_ad, #right_ad {
+	display: block;
+	position: fixed;
+	top: 0;
+}
