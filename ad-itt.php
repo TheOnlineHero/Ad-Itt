@@ -21,6 +21,93 @@ Author: TheOnlineHero - Tom Skroza
 License: GPL2
 */
 
+
+add_action( 'admin_init', 'register_ad_itt_search_settings' );
+function register_ad_itt_search_settings() {
+  $filter_image_name = $_POST["filter_image_name"];
+  if ($filter_image_name != "") {
+    $images = tom_get_results("posts", "*", "post_type='attachment' AND post_title LIKE '%$filter_image_name%' AND post_mime_type IN ('image/png', 'image/jpg', 'image/jpeg', 'image/gif')", array("post_date DESC"), "7");
+    echo "<ul id='images'>";
+    foreach ($images as $image) { 
+        ?>
+        <li>
+          <img style='width: 100px; min-height: 100px' src='<?php echo($image->guid); ?>' />
+        </li>
+
+    <?php }
+    echo "</ul>";
+    exit();
+  }
+} 
+
+add_action( 'admin_init', 'register_ad_itt_upload_settings' );
+function register_ad_itt_upload_settings() {
+  $uploadfiles = $_FILES['uploadfiles'];
+
+  if (is_array($uploadfiles)) {
+
+    foreach ($uploadfiles['name'] as $key => $value) {
+
+      // look only for uploded files
+      if ($uploadfiles['error'][$key] == 0) {
+
+        $filetmp = $uploadfiles['tmp_name'][$key];
+
+        //clean filename and extract extension
+        $filename = $uploadfiles['name'][$key];
+
+        // get file info
+        // @fixme: wp checks the file extension....
+        $filetype = wp_check_filetype( basename( $filename ), null );
+        $filetitle = preg_replace('/\.[^.]+$/', '', basename( $filename ) );
+        $filename = $filetitle . '.' . $filetype['ext'];
+        $upload_dir = wp_upload_dir();
+
+        /**
+         * Check if the filename already exist in the directory and rename the
+         * file if necessary
+         */
+        $i = 0;
+        while ( file_exists( $upload_dir['path'] .'/' . $filename ) ) {
+          $filename = $filetitle . '_' . $i . '.' . $filetype['ext'];
+          $i++;
+        }
+        $filedest = $upload_dir['path'] . '/' . $filename;
+
+        /**
+         * Check write permissions
+         */
+        if ( !is_writeable( $upload_dir['path'] ) ) {
+          $this->msg_e('Unable to write to directory %s. Is this directory writable by the server?');
+          return;
+        }
+
+        /**
+         * Save temporary file to uploads dir
+         */
+        if ( !@move_uploaded_file($filetmp, $filedest) ){
+          $this->msg_e("Error, the file $filetmp could not moved to : $filedest ");
+          continue;
+        }
+
+        $attachment = array(
+          'post_mime_type' => $filetype['type'],
+          'post_title' => $filetitle,
+          'post_content' => '',
+          'post_status' => 'inherit',
+        );
+
+        $attach_id = wp_insert_attachment( $attachment, $filedest );
+        $attach_data = wp_generate_attachment_metadata( $attach_id, $filedest );
+        wp_update_attachment_metadata( $attach_id,  $attach_data );
+        preg_match("/\/wp-content(.+)$/", $filedest, $matches, PREG_OFFSET_CAPTURE);
+        tom_update_record_by_id("posts", array("guid" => get_option("siteurl").$matches[0][0]), "ID", $attach_id);
+        echo $filedest;
+      }
+    }   
+  }
+}
+
 function ad_itt_activate() {
   add_option( "css_content_wrapper_selector", "", "", "yes" );
   add_option( "enable_left_ad_link", "", "", "yes" );
@@ -112,9 +199,9 @@ function ad_itt_settings_page() {
     });
 
     jQuery("#filter_image_name").live("keyup", function() {
-        jQuery.post("<?php echo(get_option('siteurl')); ?>/wp-content/plugins/ad-itt/ad-itt-search.php", { filter_image_name: jQuery(this).val() },
+        jQuery.post("<?php echo(get_option('siteurl')); ?>/wp-admin/admin.php?page=ad-itt/ad-itt.php", { filter_image_name: jQuery(this).val() },
             function(data) {
-              jQuery("#images").html(data);
+              jQuery("#images_container").html(data);
             }
         );
     });
@@ -141,7 +228,7 @@ function ad_itt_settings_page() {
             percent.html(percentVal);
         },
         complete: function(xhr) {
-            image_url = xhr.responseText.split(",")[0].match(/wp-content(.+)$/)[0];
+            //image_url = xhr.responseText.split(",")[0].match(/wp-content(.+)$/)[0];
             jQuery(".percent").hide();
             jQuery("#filter_image_name").val(jQuery("#uploadfiles").val().match("[a-z|A-Z|\.|-|_]*$")[0]);
             jQuery("#filter_image_name").val(jQuery("#filter_image_name").val().replace(new RegExp("\.[a-z|A-Z]*$","i"),""));
@@ -152,9 +239,9 @@ function ad_itt_settings_page() {
   });
 </script>
 <style>
-  #upload_image_container {display: none;}
-  #cboxWrapper #upload_image_container {display: block;}
-  #images ul li {float: left; margin-right: 5px;}
+  #upload_image_container, #images {display: none;}
+  #cboxWrapper #upload_image_container, #cboxWrapper #images {display: block;}
+  ul#images li {float: left; margin-right: 5px;}
   .hint { color: #008000;}
   .inside th {text-align: left;}
   .inside table {margin-left: 10px;}
@@ -177,7 +264,7 @@ function ad_itt_settings_page() {
           <label for="filter_image_name">Upload</label>
         </th>
         <td>
-          <form name="uploadfile" id="uploadfile_form" method="POST" enctype="multipart/form-data" action="<?php echo (get_option('siteurl').'/wp-content/plugins/ad-itt/ad-itt-upload.php').'#uploadfile'; ?>" accept-charset="utf-8" >
+          <form name="uploadfile" id="uploadfile_form" method="POST" enctype="multipart/form-data" action="#uploadfile" accept-charset="utf-8" >
             <input type="file" name="uploadfiles[]" id="uploadfiles" size="35" class="uploadfiles" />
             <input class="button-primary" type="submit" name="uploadfile" id="uploadfile_btn" value="Upload"  />
           </form>
@@ -198,7 +285,7 @@ function ad_itt_settings_page() {
       </tr>
       <tr>
         <td></td>
-        <td><div id="images"></div></td>
+        <td><div id="images_container"></div></td>
       </tr>
     </tbody>
   </table>
@@ -421,19 +508,19 @@ function check_ad_itt_dependencies_are_active($plugin_name, $dependencies) {
     $plugin = get_plugin_data(PLUGINPATH."/".$value["plugin"],true,true);
     $url = $value["url"];
     if (!is_plugin_active($value["plugin"])) {
-      array_push($plugins_array, "<a href='$url'>$key</a>");
+      array_push($plugins_array, $key);
     } else {
       if (isset($value["version"]) && str_replace(".", "", $plugin["Version"]) < str_replace(".", "", $value["version"])) {
-        array_push($upgrades_array, "<a href='$url'>$key</a>");
+        array_push($upgrades_array, $key);
       }
     }
   }
-  $msg_content .= implode(", ", $plugins_array) . " before you can use $plugin_name. Please ";
+  $msg_content .= implode(", ", $plugins_array) . " before you can use $plugin_name. Please go to Plugins/Add New and search/install the following plugin(s): ";
   $download_plugins_array = array();
   foreach ($dependencies as $key => $value) {
     if (!is_plugin_active($value["plugin"])) {
       $url = $value["url"];
-      array_push($download_plugins_array, "<a href='$url'>click here to download $key</a>");
+      array_push($download_plugins_array, $key);
     }
   }
   $msg_content .= implode(", ", $download_plugins_array)."</p></div>";
@@ -452,6 +539,48 @@ add_action('wp_head', 'add_ad_itt_js_and_css');
 function add_ad_itt_js_and_css() { 
   wp_enqueue_script('jquery');
   ?>
-  <script language="javascript" src="<?php echo(get_option("siteurl")); ?>/wp-content/plugins/ad-itt/js/ad-ittjs.php?20130115b"></script>
+  <script language="javascript">
+    jQuery(window).load(function() {
+      <?php if (get_option('enable_top_ad_link') != "" && get_option('top_ad_link') != "" && get_option('top_ad_img') != "") {
+          $close_link = "Close";
+          if (get_option("top_ad_close_img") != "") {
+            $close_link = "<img title='Close' alt='Close' src='".get_option("top_ad_close_img")."' />";
+          }
+          $class = get_option("top_ad_position");
+          echo("jQuery(\"".get_option('css_content_wrapper_selector')."\").prepend(\"<div class='".$class."' id='top_ad'><a target='_blank' href='".get_option('top_ad_link')."'><img src='".get_option('top_ad_img')."' /></a> <a id='close_top_ad_img' href=''>".$close_link."</a></div>\");");
+      } ?>
+      <?php if (get_option('enable_bottom_ad_link') != "" && get_option('bottom_ad_link') != "" && get_option('bottom_ad_img') != "") {
+        echo("jQuery(\"".get_option('css_content_wrapper_selector')."\").append(\"<a target='_blank' id='bottom_ad' href='".get_option('bottom_ad_link')."'><img src='".get_option('bottom_ad_img')."' /></a>\");");
+      } ?>
+      <?php if (get_option('enable_left_ad_link') != "" && get_option('left_ad_link') != "" && get_option('left_ad_img') != "") {
+        $class = get_option("left_ad_position");
+        echo("jQuery(\"body\").append(\"<a target='_blank' id='left_ad' class='".$class."' href='".get_option('left_ad_link')."'><img src='".get_option('left_ad_img')."' /></a>\");");
+      } ?>
+      <?php if (get_option('enable_right_ad_link') != "" && get_option('right_ad_link') != "" && get_option('right_ad_img') != "") {
+        $class = get_option("right_ad_position");
+        echo("jQuery(\"body\").append(\"<a target='_blank' id='right_ad' class='".$class."' href='".get_option('right_ad_link')."'><img src='".get_option('right_ad_img')."' /></a>\");");
+      } ?>
+      jQuery("#top_ad").width(jQuery("<?php echo(get_option('css_content_wrapper_selector')); ?>").css("width"));
+      var position = jQuery("<?php echo(get_option('css_content_wrapper_selector')); ?>").offset();
+      var left = parseInt(position.left - parseInt(jQuery("#left_ad").css("width")));
+      jQuery("#left_ad").css("left", left);
+      var right = parseInt(position.left + parseInt(jQuery("<?php echo(get_option('css_content_wrapper_selector')); ?>").css("width")));
+      jQuery("#right_ad").css("left", right);
+      <?php if (get_option('top_ad_retract_time') != "" ) { ?>
+        jQuery("#top_ad").delay(<?php echo(get_option('top_ad_retract_time')); ?>).slideUp();
+      <?php } ?>
+      jQuery("#close_top_ad_img").live("click", function() {
+        jQuery("#top_ad").hide();
+        return false;
+      });
+      jQuery(window).resize(function() {
+        var position = jQuery("<?php echo(get_option('css_content_wrapper_selector')); ?>").offset();
+        var left = parseInt(position.left - parseInt(jQuery("#left_ad").css("width")));
+        jQuery("#left_ad").css("left", left);
+        var right = parseInt(position.left + parseInt(jQuery("<?php echo(get_option('css_content_wrapper_selector')); ?>").css("width")));
+        jQuery("#right_ad").css("left", right);
+      });
+    });
+  </script>
   <link rel="stylesheet" href="<?php echo(get_option("siteurl")); ?>/wp-content/plugins/ad-itt/css/ad-itt.css?20130115b"></link>
 <?php } ?>
