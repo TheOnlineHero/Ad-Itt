@@ -198,12 +198,16 @@ function ad_itt_settings_page() {
       jQuery.colorbox({inline:true, href:"#upload_image_container", width: "940px", height: "550px"});
     });
 
-    jQuery("#filter_image_name").live("keyup", function() {
-        jQuery.post("<?php echo(get_option('siteurl')); ?>/wp-admin/admin.php?page=ad-itt/ad-itt.php", { filter_image_name: jQuery(this).val() },
-            function(data) {
-              jQuery("#images_container").html(data);
-            }
-        );
+    jQuery("#filter_image_name").live("keydown", function() {
+        if (jQuery(this).val().length < 2) {
+          jQuery("#images_container").html("");
+        } else {
+          jQuery.post("<?php echo(get_option('siteurl')); ?>/wp-admin/admin.php?page=ad-itt/ad-itt.php", { filter_image_name: jQuery(this).val() },
+              function(data) {
+                jQuery("#images_container").html(data);
+              }
+          );
+        }
     });
 
     jQuery("#images img").live("click", function() {
@@ -228,11 +232,10 @@ function ad_itt_settings_page() {
             percent.html(percentVal);
         },
         complete: function(xhr) {
-            //image_url = xhr.responseText.split(",")[0].match(/wp-content(.+)$/)[0];
             jQuery(".percent").hide();
             jQuery("#filter_image_name").val(jQuery("#uploadfiles").val().match("[a-z|A-Z|\.|-|_]*$")[0]);
             jQuery("#filter_image_name").val(jQuery("#filter_image_name").val().replace(new RegExp("\.[a-z|A-Z]*$","i"),""));
-            jQuery("#filter_image_name").keyup();
+            jQuery("#filter_image_name").keydown();
         }
     }); 
     
