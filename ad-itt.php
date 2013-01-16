@@ -20,23 +20,28 @@ Version: 1.0
 Author: TheOnlineHero - Tom Skroza
 License: GPL2
 */
-require_once(ABSPATH . 'wp-admin/includes/plugin.php');
-require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-
 
 function ad_itt_activate() {
   add_option( "css_content_wrapper_selector", "", "", "yes" );
+  add_option( "enable_left_ad_link", "", "", "yes" );
   add_option( "left_ad_link", "", "", "yes" );
   add_option( "left_ad_img", "", "", "yes" );
+  add_option( "left_ad_position", "", "", "yes" );
+  add_option( "enable_right_ad_link", "", "", "yes" );
   add_option( "right_ad_link", "", "", "yes" );
   add_option( "right_ad_img", "", "", "yes" );
+  add_option( "right_ad_position", "", "", "yes" );
 
+  add_option( "enable_top_ad_link", "", "", "yes" );
   add_option( "top_ad_link", "", "", "yes" );
   add_option( "top_ad_img", "", "", "yes" );
+  add_option( "top_ad_retract_time", "", "", "yes" );
+  add_option( "top_ad_close_img", "", "", "yes" );
+  add_option( "top_ad_position", "", "", "yes" );
+  add_option( "enable_bottom_ad_link", "", "", "yes" );
   add_option( "bottom_ad_link", "", "", "yes" );
   add_option( "bottom_ad_img", "", "", "yes" );
-
-  dbDelta($sql);
+  add_option( "bottom_ad_position", "", "", "yes" );
 
 }
 register_activation_hook( __FILE__, 'ad_itt_activate' );
@@ -52,16 +57,32 @@ add_action( 'admin_init', 'register_ad_itt_settings' );
 function register_ad_itt_settings() {
   //register our settings
   register_setting( 'ad-itt-group', 'css_content_wrapper_selector' );
+  register_setting( 'ad-itt-group', 'enable_left_ad_link' );
   register_setting( 'ad-itt-group', 'left_ad_link' );
   register_setting( 'ad-itt-group', 'left_ad_img' );
+  register_setting( 'ad-itt-group', 'left_ad_position' );
+  register_setting( 'ad-itt-group', 'enable_right_ad_link' );
   register_setting( 'ad-itt-group', 'right_ad_link' );
   register_setting( 'ad-itt-group', 'right_ad_img' );
+  register_setting( 'ad-itt-group', 'right_ad_position' );
 
+  register_setting( 'ad-itt-group', 'enable_top_ad_link' );
   register_setting( 'ad-itt-group', 'top_ad_link' );
   register_setting( 'ad-itt-group', 'top_ad_img' );
+  register_setting( 'ad-itt-group', 'top_ad_retract_time' );
+  register_setting( 'ad-itt-group', 'top_ad_close_img' );
+  register_setting( 'ad-itt-group', 'top_ad_position' );
+  register_setting( 'ad-itt-group', 'enable_bottom_ad_link' );
   register_setting( 'ad-itt-group', 'bottom_ad_link' );
   register_setting( 'ad-itt-group', 'bottom_ad_img' );
+  register_setting( 'ad-itt-group', 'bottom_ad_position' );
   
+  @check_ad_itt_dependencies_are_active(
+    "Ad Itt", 
+    array(
+      "Tom M8te" => array("plugin"=>"tom-m8te/tom-m8te.php", "url" => "http://downloads.wordpress.org/plugin/tom-m8te.zip", "version" => "1.1"),
+      "JQuery Colorbox" => array("plugin"=>"jquery-colorbox/jquery-colorbox.php", "url" => "http://downloads.wordpress.org/plugin/jquery-colorbox.zip"))
+  );
 }
 
 
@@ -135,6 +156,12 @@ function ad_itt_settings_page() {
   #cboxWrapper #upload_image_container {display: block;}
   #images ul li {float: left; margin-right: 5px;}
   .hint { color: #008000;}
+  .inside th {text-align: left;}
+  .inside table {margin-left: 10px;}
+  tr.odd th {background: #cac9c9;}
+  tbody tr.odd td, tr.odd th {background: #dfdfdf;}
+  .inside table {width: 100%;}
+  th.enable-col {width: 20px;text-align: center;}
 </style>
 
 <div id="upload_image_container">
@@ -144,7 +171,6 @@ function ad_itt_settings_page() {
 <div class="inside">
   <table class="form-table">
     <tbody>
-
 
       <tr valign="top">
         <th scope="row">
@@ -161,9 +187,6 @@ function ad_itt_settings_page() {
           </div>
         </td>
       </tr>
-
-
-
 
       <tr valign="top">
         <th scope="row">
@@ -191,8 +214,15 @@ function ad_itt_settings_page() {
 <form method="post" action="options.php">
   <?php settings_fields( 'ad-itt-group' ); ?>
   <table class="form-table">
+    <thead>
+      <tr>
+        <th class="enable-col">Enable/Disable</th>
+        <th colspan="2"></th>
+      </tr>
+    </thead>
     <tbody>
-      <tr valign="top">
+      <tr valign="top" class="odd">
+        <th class="enable-col"></th>
         <th scope="row">
           <label for="css_content_wrapper_selector">Css Content Wrapper Selector</label>
         </th>
@@ -202,7 +232,11 @@ function ad_itt_settings_page() {
         </td>
       </tr>
 
-      <tr valign="top">
+      <tr valign="top" class="even">
+        <th class="enable-col">
+          <input type="hidden" name="enable_top_ad_link" value="" />
+          <input type="checkbox" value="on" name="enable_top_ad_link" <?php if (get_option("enable_top_ad_link") == "on") { echo "checked"; } ?>/>
+        </th>
         <th scope="row">
           <label for="top_ad_link">Top Ad Link</label>
         </th>
@@ -211,7 +245,8 @@ function ad_itt_settings_page() {
         </td>
       </tr>
 
-      <tr valign="top">
+      <tr valign="top" class="even">
+        <th class="enable-col"></th>
         <th scope="row">
           <label for="top_ad_img">Top Ad Image</label>
         </th>
@@ -221,7 +256,45 @@ function ad_itt_settings_page() {
         </td>
       </tr>
 
-      <tr valign="top">
+      <tr valign="top" class="even">
+        <th class="enable-col"></th>
+        <th scope="row">
+          <label for="top_ad_close_img">Top Ad Close Image</label>
+        </th>
+        <td>
+          <input type="text" id="top_ad_close_img" name="top_ad_close_img" value="<?php echo get_option('top_ad_close_img'); ?>" />
+          <input type="button" class="image-uploader" value="Upload" />
+        </td>
+      </tr>
+
+      <tr valign="top" class="even">
+        <th class="enable-col"></th>
+        <th scope="row">
+          <label for="top_ad_retract_time">Top Ad Time Limit (in milliseconds)</label>
+        </th>
+        <td>
+          <input type="text" id="top_ad_retract_time" name="top_ad_retract_time" value="<?php echo get_option('top_ad_retract_time'); ?>" />
+        </td>
+      </tr>
+
+      <tr valign="top" class="even">
+        <th class="enable-col"></th>
+        <th scope="row">
+          <label for="top_ad_position">Top Ad Position</label>
+        </th>
+        <td>
+          <select id="top_ad_position" name="top_ad_position">
+            <option value="relative" <?php if (get_option("top_ad_position") == "relative") {echo("selected");}?> >Relative</option>
+            <option value="absolute" <?php if (get_option("top_ad_position") == "absolute") {echo("selected");}?> >Absolute</option>
+          </select>
+        </td>
+      </tr>
+
+      <tr valign="top" class="odd">
+        <th class="enable-col">
+          <input type="hidden" name="enable_bottom_ad_link" value="" />
+          <input type="checkbox" value="on" name="enable_bottom_ad_link" <?php if (get_option("enable_bottom_ad_link") == "on") { echo "checked"; } ?>/>
+        </th>
         <th scope="row">
           <label for="bottom_ad_link">Bottom Ad Link</label>
         </th>
@@ -230,7 +303,8 @@ function ad_itt_settings_page() {
         </td>
       </tr>
 
-      <tr valign="top">
+      <tr valign="top" class="odd">
+        <th class="enable-col"></th>
         <th scope="row">
           <label for="bottom_ad_img">Bottom Ad Image</label>
         </th>
@@ -240,7 +314,24 @@ function ad_itt_settings_page() {
         </td>
       </tr>
 
-      <tr valign="top">
+<!--       <tr valign="top" class="odd">
+        <th class="enable-col"></th>
+        <th scope="row">
+          <label for="bottom_ad_position">Bottom Ad Position</label>
+        </th>
+        <td>
+          <select id="bottom_ad_position" name="bottom_ad_position">
+            <option value="absolute" <php if (get_option("bottom_ad_position") == "absolute") {echo("selected");}> >Absolute</option>
+            <option value="static" <php if (get_option("bottom_ad_position") == "static") {echo("selected");}> >Static</option>
+          </select>
+        </td>
+      </tr> -->
+
+      <tr valign="top" class="even">
+        <th class="enable-col">
+          <input type="hidden" name="enable_left_ad_link" value="" />
+          <input type="checkbox" value="on" name="enable_left_ad_link" <?php if (get_option("enable_left_ad_link") == "on") { echo "checked"; } ?>/>
+        </th>
         <th scope="row">
           <label for="left_ad_link">Left Ad Link</label>
         </th>
@@ -249,7 +340,8 @@ function ad_itt_settings_page() {
         </td>
       </tr>
 
-      <tr valign="top">
+      <tr valign="top" class="even">
+        <th class="enable-col"></th>
         <th scope="row">
           <label for="left_ad_img">Left Ad Image</label>
         </th>
@@ -259,7 +351,24 @@ function ad_itt_settings_page() {
         </td>
       </tr>
 
-      <tr valign="top">
+      <tr valign="top" class="even">
+        <th class="enable-col"></th>
+        <th scope="row">
+          <label for="left_ad_position">Left Ad Position</label>
+        </th>
+        <td>
+          <select id="left_ad_position" name="left_ad_position">
+            <option value="fixed" <?php if (get_option("top_ad_position") == "fixed") {echo("selected");}?> >Fixed</option>
+            <option value="absolute" <?php if (get_option("top_ad_position") == "absolute") {echo("selected");}?> >Absolute</option>
+          </select>
+        </td>
+      </tr>
+
+      <tr valign="top" class="odd">
+        <th class="enable-col">
+          <input type="hidden" name="enable_right_ad_link" value="" />
+          <input type="checkbox" value="on" name="enable_right_ad_link" <?php if (get_option("enable_right_ad_link") == "on") { echo "checked"; } ?>/>
+        </th>
         <th scope="row">
           <label for="right_ad_link">Right Ad Link</label>
         </th>
@@ -268,13 +377,27 @@ function ad_itt_settings_page() {
         </td>
       </tr>
 
-      <tr valign="top">
+      <tr valign="top" class="odd">
+        <th class="enable-col"></th>
         <th scope="row">
           <label for="right_ad_img">Right Ad Image</label>
         </th>
         <td>
           <input type="text" id="right_ad_img" name="right_ad_img" value="<?php echo get_option('right_ad_img'); ?>" />
           <input type="button" class="image-uploader" value="Upload" />
+        </td>
+      </tr>
+
+      <tr valign="top" class="even">
+        <th class="enable-col"></th>
+        <th scope="row">
+          <label for="right_ad_position">Right Ad Position</label>
+        </th>
+        <td>
+          <select id="right_ad_position" name="right_ad_position">
+            <option value="fixed" <?php if (get_option("right_ad_position") == "fixed") {echo("selected");}?> >Fixed</option>
+            <option value="absolute" <?php if (get_option("right_ad_position") == "absolute") {echo("selected");}?> >Absolute</option>
+          </select>
         </td>
       </tr>
 
@@ -290,6 +413,7 @@ function ad_itt_settings_page() {
 <?php }
 
 function check_ad_itt_dependencies_are_active($plugin_name, $dependencies) {
+  require_once(ABSPATH . 'wp-admin/includes/plugin.php');
   $msg_content = "<div class='updated'><p>Sorry for the confusion but you must install and activate ";
   $plugins_array = array();
   $upgrades_array = array();
@@ -315,27 +439,20 @@ function check_ad_itt_dependencies_are_active($plugin_name, $dependencies) {
   }
   $msg_content .= implode(", ", $download_plugins_array)."</p></div>";
   if (count($plugins_array) > 0) {
+    deactivate_plugins( __FILE__, true);
     echo($msg_content);
   } 
 
   if (count($upgrades_array) > 0) {
+    deactivate_plugins( __FILE__,true);
     echo "<div class='updated'><p>$plugin_name requires the following plugins to be updated: ".implode(", ", $upgrades_array).".</p></div>";
   }
 }
-
-@check_ad_itt_dependencies_are_active(
-  "Ad Itt", 
-  array(
-    "Tom M8te" => array("plugin"=>"tom-m8te/tom-m8te.php", "url" => "http://downloads.wordpress.org/plugin/tom-m8te.zip", "version" => "1.1"),
-    "JQuery Colorbox" => array("plugin"=>"jquery-colorbox/jquery-colorbox.php", "url" => "http://downloads.wordpress.org/plugin/jquery-colorbox.zip"))
-);
 
 add_action('wp_head', 'add_ad_itt_js_and_css');
 function add_ad_itt_js_and_css() { 
   wp_enqueue_script('jquery');
   ?>
-  <script language="javascript" src="<?php echo(get_option("siteurl")); ?>/wp-content/plugins/ad-itt/js/ad-ittjs.php"></script>
-  <link rel="stylesheet" href="<?php echo(get_option("siteurl")); ?>/wp-content/plugins/ad-itt/css/ad-itt.css"></link>
-<?php }
-
-?>
+  <script language="javascript" src="<?php echo(get_option("siteurl")); ?>/wp-content/plugins/ad-itt/js/ad-ittjs.php?20130115b"></script>
+  <link rel="stylesheet" href="<?php echo(get_option("siteurl")); ?>/wp-content/plugins/ad-itt/css/ad-itt.css?20130115b"></link>
+<?php } ?>

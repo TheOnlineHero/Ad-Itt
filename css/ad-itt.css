@@ -1,5 +1,21 @@
-#left_ad, #right_ad {
+#top_ad.relative {
+	position: relative;
+	z-index: 10000;
+}
+#top_ad.absolute, #left_ad.absolute, #right_ad.absolute {
+	position: absolute;
+	z-index: 10000;
+}
+#close_top_ad_img {
+	position: absolute;
+	bottom: 25px;
+	right: 0;
+}
+#left_ad.fixed, #right_ad.fixed, #left_ad.absolute, #right_ad.absolute {
 	display: block;
 	position: fixed;
 	top: 0;
+}
+#left_ad.absolute, #right_ad.absolute {
+	position: absolute;
 }
