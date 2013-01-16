@@ -413,7 +413,6 @@ function ad_itt_settings_page() {
 <?php }
 
 function check_ad_itt_dependencies_are_active($plugin_name, $dependencies) {
-  require_once(ABSPATH . 'wp-admin/includes/plugin.php');
   $msg_content = "<div class='updated'><p>Sorry for the confusion but you must install and activate ";
   $plugins_array = array();
   $upgrades_array = array();
