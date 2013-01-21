@@ -185,9 +185,12 @@ function ad_itt_settings_page() {
     wp_enqueue_script('thickbox');
     wp_register_script('my-upload', WP_PLUGIN_URL, array('jquery','media-upload','thickbox'));
     wp_enqueue_script('my-upload');
-    echo("<script language='javascript' src='".get_option("siteurl")."/wp-content/plugins/jquery-colorbox/js/jquery.colorbox-min.js'></script>");
-    echo("<script language='javascript' src='http://malsup.github.com/jquery.form.js'></script>");
-    echo("<link rel='stylesheet' href='".get_option("siteurl")."/wp-content/plugins/jquery-colorbox/themes/theme1/colorbox.css' />");
+    wp_register_script( 'my-jquery-colorbox', get_option("siteurl")."/wp-content/plugins/jquery-colorbox/js/jquery.colorbox-min.js" );
+    wp_enqueue_script('my-jquery-colorbox');
+    wp_register_script( 'my-form-script', plugins_url('/js/jquery.form.js', __FILE__) );
+    wp_enqueue_script('my-form-script');
+    wp_register_style( 'my-jquery-colorbox-style',get_option("siteurl")."/wp-content/plugins/jquery-colorbox/themes/theme1/colorbox.css");
+    wp_enqueue_style('my-jquery-colorbox-style');
 ?>
 
 <script type="text/javascript">
@@ -585,5 +588,8 @@ function add_ad_itt_js_and_css() {
       });
     });
   </script>
-  <link rel="stylesheet" href="<?php echo(get_option("siteurl")); ?>/wp-content/plugins/ad-itt/css/ad-itt.css?20130115b"></link>
-<?php } ?>
+
+<?php 
+  wp_register_style( 'my-ad-itt-style', plugins_url('/css/ad-itt.css?20130115b', __FILE__) );
+    wp_enqueue_style('my-ad-itt-style');
+} ?>
